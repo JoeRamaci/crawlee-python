@@ -52,3 +52,6 @@ website/package-lock.json
 
 # Default directory for memory storage
 storage/
+
+# sandbox dir TODO: remove before final commit?
+/sandbox
