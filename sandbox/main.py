@@ -58,7 +58,13 @@ async def bsc() -> None:
 
 if __name__ == '__main__':
     # asyncio.run(bsc())
-    html_cacher.cache('https://crawlee.dev')
-    html_cacher.cache('https://example.com')
+    # html_cacher.cache('https://crawlee.dev')
+    # html_cacher.cache('https://example.com')
+    html_cacher.batch_cache(
+        [
+        'https://crawlee.dev',
+        'https://example.com'
+        ]
+    )
 
     print('done')

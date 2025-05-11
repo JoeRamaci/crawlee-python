@@ -27,6 +27,12 @@ def cache(url: str) -> None:
         f.write(html_content)
 
 
+def batch_cache(urls: list[str]) -> None:
+    """Cache multiple URLs by calling `cache` in a loop."""
+    for url in urls:
+        cache(url)
+
+
 def _iterate_name(base_path: str, prefix: str = 'cached', extension: str = '.html') -> str:
     """Return a new iterated filename like 'cached1.html', 'cached2.html', etc. down the cache/cached*.html path."""
     existing_files = os.listdir(base_path)  # get all files in dir

@@ -1,7 +1,3 @@
-from ._cached_router import build_router
-from .html_cacher import cache
+from .html_cacher import batch_cache, cache
 
-__all__ = [
-    'build_router',
-    'cache',
-]
+__all__ = ['batch_cache', 'cache']
