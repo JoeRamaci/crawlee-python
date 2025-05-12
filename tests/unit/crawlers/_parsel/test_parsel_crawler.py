@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import sys
+from types import ModuleType
 from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
 
 from crawlee import ConcurrencySettings, HttpHeaders, Request, RequestTransformAction
+from crawlee._utils import try_import
+from crawlee._utils.try_import import FailedImport, install_import_hook
 from crawlee.crawlers import ParselCrawler
 
 if TYPE_CHECKING:
@@ -65,7 +68,6 @@ async def test_enqueue_links(redirect_server_url: URL, server_url: URL, http_cli
 
 async def test_enqueue_links_with_incompatible_kwargs_raises_error(server_url: URL) -> None:
     """Call `enqueue_links` with arguments that can't be used together."""
-    requests = ['https://www.test.io/']
     crawler = ParselCrawler(max_request_retries=1)
     exceptions = []
 
@@ -76,7 +78,7 @@ async def test_enqueue_links_with_incompatible_kwargs_raises_error(server_url: U
         except Exception as e:
             exceptions.append(e)
 
-    await crawler.run(requests)
+    await crawler.run([str(server_url)])
 
     assert len(exceptions) == 1
     assert type(exceptions[0]) is ValueError
@@ -187,38 +189,50 @@ async def test_handle_blocked_status_code(server_url: URL, http_client: HttpClie
 
 
 def test_import_error_handled() -> None:
-    original_modules = dict(sys.modules)
-    try:
-        modules_to_remove = [
-            'parsel',
-            'crawlee.crawlers',
-            'crawlee.crawlers._parsel',
-        ]
-        for module in modules_to_remove:
-            sys.modules.pop(module, None)
+    sys.modules.pop('crawlee.crawlers', None)
+    sys.modules.pop('crawlee', None)
+    sys.modules.pop('crawlee.crawlers._parsel', None)
+    sys.modules.pop('crawlee.crawlers._parsel.parsel_crawler', None)
 
-        error_msg = (
-            "To import this, you need to install the 'parsel' extra."
-            "For example, if you use pip, run `pip install 'crawlee[parsel]'`."
-        )
+    crawlee_module = ModuleType('crawlee')
+    crawlers_module = ModuleType('crawlee.crawlers')
+    crawlers_module.__path__ = []
 
-        def raise_import_error() -> None:
-            raise ImportError(error_msg)
+    sys.modules['crawlee'] = crawlee_module
+    sys.modules['crawlee.crawlers'] = crawlers_module
 
-        # Mock the actual import mechanism
-        with (
-            mock.patch('builtins.__import__', side_effect=raise_import_error),
-            mock.patch.dict('sys.modules', {'parsel': None}),
-            pytest.raises(ImportError) as import_error,
-        ):
-            from crawlee.crawlers import ParselCrawler  # noqa: F401
+    install_import_hook('crawlee.crawlers')
 
-        assert str(import_error.value) == error_msg
+    with try_import.try_import('crawlee.crawlers', 'ParselCrawler'):
+        from crawlee.crawlers._parsel.parsel_crawler import ParselCrawler  # type: ignore[import-not-found]
 
-    finally:
-        # Restore original sys.modules state
-        sys.modules.clear()
-        sys.modules.update(original_modules)
+        pytest.fail('Import succeeded unexpectedly inside try_import block')
+
+    the_module = sys.modules['crawlee.crawlers']  # type: ignore[unreachable]
+
+    parsel_crawler_obj_from_dict = the_module.__dict__['ParselCrawler']
+    assert isinstance(parsel_crawler_obj_from_dict, FailedImport), (
+        f'Object for ParselCrawler in __dict__ is type {type(parsel_crawler_obj_from_dict)}, expected FailedImport.'
+    )
+
+    stored_message = parsel_crawler_obj_from_dict.message
+    # This message originates from the actual ModuleNotFoundError when '..._parsel' is not found.
+    expected_message_content = "No module named 'crawlee.crawlers._parsel'"
+    assert expected_message_content in stored_message, (
+        f"Stored message ('{stored_message}') does not contain expected content ('{expected_message_content}'). "
+        f'Correct stored message is: {stored_message}'
+    )
+    print(f"Stored message in FailedImport is: '{stored_message}'")
+
+    with pytest.raises(ImportError) as cm:
+        from crawlee.crawlers import ParselCrawler  # noqa: F401
+
+    assert cm.value is not None, 'pytest.raises did not capture an exception'
+    final_error_message = str(cm.value)
+
+    assert final_error_message == stored_message, (
+        f"Final raised error ('{final_error_message}') does not match stored message ('{stored_message}')."
+    )
 
 
 async def test_json(server_url: URL, http_client: HttpClient) -> None:
