@@ -45,7 +45,7 @@ class MonitorTests(unittest.TestCase):
         mock_proc1.pid = 123
 
         mock_proc2 = MagicMock()
-        mock_proc2.info = {'pid': 456, 'name': 'not_chromium'}
+        mock_proc2.info = {'pid': 456, 'name': 'firefox'}
         mock_proc2.cpu_percent.return_value = 25.0
         mock_proc2.pid = 456
 
