@@ -55,7 +55,6 @@ class PlaywrightPersistentBrowser(Browser):
         """Create persistent context instead of regular one. Merge launch options with context options."""
         if self._context:
             raise RuntimeError('Persistent browser can have only one context')
-        print('BROWSER START---------')
         launch_options = self._browser_launch_options | context_options
 
         if self._user_data_dir:
