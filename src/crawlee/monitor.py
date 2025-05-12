@@ -61,13 +61,17 @@ class Monitor:
         """Return list of CPU usage strings for Chromium-related processes above 0%."""
         usage_info = []
         for proc in psutil.process_iter(['pid', 'name']):
+            if 'chromium' not in proc.info.get('name', '').lower():
+                continue
+
             try:
-                if 'chromium' in proc.info['name'].lower():
-                    cpu = proc.cpu_percent(interval=None)
-                    if cpu > 0:
-                        usage_info.append(f'PID {proc.pid}: {cpu:.2f}% CPU')
+                cpu = proc.cpu_percent(interval=None)
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
+
+            if cpu > 0:
+                usage_info.append(f'PID {proc.pid}: {cpu:.2f}% CPU')
+
         return usage_info
 
     async def display(self) -> None:

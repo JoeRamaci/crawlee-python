@@ -37,7 +37,7 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual(pad_date('', 5), '00000')
         self.assertEqual(pad_date(0, 3), '000')
 
-    @patch('monitor.psutil.process_iter')
+    @patch('crawlee.monitor.psutil.process_iter')
     def test_get_chromium_cpu_usage(self, mock_process_iter: MagicMock) -> None:
         mock_proc1 = MagicMock()
         mock_proc1.info = {'pid': 123, 'name': 'Chromium'}
