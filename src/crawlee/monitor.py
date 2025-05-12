@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from os import getloadavg
 from typing import TYPE_CHECKING
 
+import psutil
 from psutil import virtual_memory
 
 if TYPE_CHECKING:
@@ -56,6 +57,19 @@ class Monitor:
             await self.display()
             await asyncio.sleep(interval)
 
+    def _get_chromium_cpu_usage(self) -> list[str]:
+        """Return list of CPU usage strings for Chromium-related processes above 0%."""
+        usage_info = []
+        for proc in psutil.process_iter(['pid', 'name']):
+            try:
+                if 'chromium' in proc.info['name'].lower():
+                    cpu = proc.cpu_percent(interval=None)
+                    if cpu > 0:
+                        usage_info.append(f"PID {proc.pid}: {cpu:.2f}% CPU")
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+        return usage_info
+
     async def display(self) -> None:
         """Display runtime stats like CPU, memory, and request progress."""
         stats = self.statistics.calculate()
@@ -88,6 +102,13 @@ class Monitor:
             f'Concurrencies: Current {self.autoscaled_pool.current_concurrency}, '
             f'Desired {self.autoscaled_pool.desired_concurrency}'
         )
+        chromium_usages = self._get_chromium_cpu_usage()
+        if chromium_usages:
+            self._monitor_display.log("Chromium Process CPU Usage:")
+            for line in chromium_usages:
+                self._monitor_display.log(f"  {line}")
+        else:
+            self._monitor_display.log("No active Chromium processes detected.")
 
 
 class MonitorDisplay:

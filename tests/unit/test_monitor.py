@@ -1,5 +1,7 @@
 import unittest
 from datetime import datetime
+from unittest.mock import patch, MagicMock
+
 from crawlee import monitor
 from crawlee.monitor import pad_date
 
@@ -35,10 +37,33 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual(pad_date('', 5), '00000')
         self.assertEqual(pad_date(0, 3), '000')
 
-    # def test_log(self):
-    #     test_line = "Test Hello :)"
-    #     expected = "Test Hello :)"
-    #     self.assertEqual(MonitorDisplay.log(test_line), expected)
+    @patch('monitor.psutil.process_iter')
+    def test_get_chromium_cpu_usage(self, mock_process_iter):
+        mock_proc1 = MagicMock()
+        mock_proc1.info = {'pid': 123, 'name': 'Chromium'}
+        mock_proc1.cpu_percent.return_value = 12.5
+
+        mock_proc2 = MagicMock()
+        mock_proc2.info = {'pid': 456, 'name': 'not_chromium'}
+        mock_proc2.cpu_percent.return_value = 25.0
+
+        mock_proc3 = MagicMock()
+        mock_proc3.info = {'pid': 789, 'name': 'chromium-helper'}
+        mock_proc3.cpu_percent.return_value = 0.0
+
+        mock_process_iter.return_value = [mock_proc1, mock_proc2, mock_proc3]
+
+        dummy_stats = MagicMock()
+        dummy_pool = MagicMock()
+        monitor_instance = monitor.Monitor(dummy_stats, dummy_pool, None)
+
+        result = monitor_instance._get_chromium_cpu_usage()
+
+        self.assertIn("PID 123: 12.50% CPU", result)
+        self.assertNotIn("PID 456", ''.join(result))  # Not Chromium
+        self.assertNotIn("PID 789", ''.join(result))  # 0% CPU
+
+
 
 
 if __name__ == '__main__':

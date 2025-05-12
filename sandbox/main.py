@@ -1,23 +1,20 @@
 import asyncio
-from datetime import timedelta
 
 from crawlee.crawlers import (
-    BasicCrawlingContext,
-    BeautifulSoupCrawler,
-    BeautifulSoupCrawlingContext,
+    PlaywrightCrawler,
+    PlaywrightCrawlingContext,
+    PlaywrightPreNavCrawlingContext,
 )
 
 
-async def bsc() -> None:
-    # Create an instance of the BeautifulSoupCrawler class, a crawler that automatically
-    # loads the URLs and parses their HTML using the BeautifulSoup library.
-    crawler = BeautifulSoupCrawler(
-        # On error, retry each page at most once.
-        max_request_retries=1,
-        # Increase the timeout for processing each page to 30 seconds.
-        request_handler_timeout=timedelta(seconds=30),
+async def main() -> None:
+    crawler = PlaywrightCrawler(
         # Limit the crawl to max requests. Remove or increase it for crawling all links.
         max_requests_per_crawl=10,
+        # Headless mode, set to False to see the browser in action.
+        headless=False,
+        # Browser types supported by Playwright.
+        browser_type='chromium',
     )
 
     # Define the default request handler, which will be called for every request.
@@ -25,34 +22,46 @@ async def bsc() -> None:
     # helper methods. Here are a few key ones we use for demonstration:
     # - request: an instance of the Request class containing details such as the URL
     #   being crawled and the HTTP method used.
-    # - soup: the BeautifulSoup object containing the parsed HTML of the response.
+    # - page: Playwright's Page object, which allows interaction with the web page
+    #   (see https://playwright.dev/python/docs/api/class-page for more details).
     @crawler.router.default_handler
-    async def request_handler(context: BeautifulSoupCrawlingContext) -> None:
+    async def request_handler(context: PlaywrightCrawlingContext) -> None:
         context.log.info(f'Processing {context.request.url} ...')
 
-        # Extract data from the page.
-        data = {
-            'url': context.request.url,
-            'title': context.soup.title.string if context.soup.title else None,
-            'h1s': [h1.text for h1 in context.soup.find_all('h1')],
-            'h2s': [h2.text for h2 in context.soup.find_all('h2')],
-            'h3s': [h3.text for h3 in context.soup.find_all('h3')],
-        }
+        # Extract data from the page using Playwright's API.
+        posts = await context.page.query_selector_all('.athing')
+        data = []
+
+        for post in posts:
+            # Get the HTML elements for the title and rank within each post.
+            title_element = await post.query_selector('.title a')
+            rank_element = await post.query_selector('.rank')
+
+            # Extract the data we want from the elements.
+            title = await title_element.inner_text() if title_element else None
+            rank = await rank_element.inner_text() if rank_element else None
+            href = await title_element.get_attribute('href') if title_element else None
+
+            data.append({'title': title, 'rank': rank, 'href': href})
 
         # Push the extracted data to the default dataset. In local configuration,
         # the data will be stored as JSON files in ./storage/datasets/default.
         await context.push_data(data)
 
-    # Register pre navigation hook which will be called before each request.
-    # This hook is optional and does not need to be defined at all.
+        # Find a link to the next page and enqueue it if it exists.
+        await context.enqueue_links(selector='.morelink')
+
+    # Define a hook that will be called each time before navigating to a new URL.
+    # The hook receives a context parameter, providing access to the request and
+    # browser page among other things. In this example, we log the URL being
+    # navigated to.
     @crawler.pre_navigation_hook
-    async def some_hook(context: BasicCrawlingContext) -> None:
-        pass
+    async def log_navigation_url(context: PlaywrightPreNavCrawlingContext) -> None:
+        context.log.info(f'Navigating to {context.request.url} ...')
 
     # Run the crawler with the initial list of URLs.
-    await crawler.run(['https://crawlee.dev'])
+    await crawler.run(['https://news.ycombinator.com/'])
 
 
 if __name__ == '__main__':
-    asyncio.run(bsc())
-
+    asyncio.run(main())
