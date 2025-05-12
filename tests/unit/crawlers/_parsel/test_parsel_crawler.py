@@ -186,23 +186,39 @@ async def test_handle_blocked_status_code(server_url: URL, http_client: HttpClie
     assert crawler._statistics.error_tracker.total == 1
 
 
-# TODO: Remove the skip mark when the test is fixed:
-# https://github.com/apify/crawlee-python/issues/838
-@pytest.mark.skip(reason='The test does not work with `crawlee._utils.try_import.ImportWrapper`.')
 def test_import_error_handled() -> None:
-    # Simulate ImportError for parsel
-    with mock.patch.dict('sys.modules', {'parsel': None}):
-        # Invalidate ParselCrawler import
-        sys.modules.pop('crawlee.crawlers', None)
-        sys.modules.pop('crawlee.crawlers._parsel', None)
-        with pytest.raises(ImportError) as import_error:
+    original_modules = dict(sys.modules)
+    try:
+        modules_to_remove = [
+            'parsel',
+            'crawlee.crawlers',
+            'crawlee.crawlers._parsel',
+        ]
+        for module in modules_to_remove:
+            sys.modules.pop(module, None)
+
+        error_msg = (
+            "To import this, you need to install the 'parsel' extra."
+            "For example, if you use pip, run `pip install 'crawlee[parsel]'`."
+        )
+
+        def raise_import_error() -> None:
+            raise ImportError(error_msg)
+
+        # Mock the actual import mechanism
+        with (
+            mock.patch('builtins.__import__', side_effect=raise_import_error),
+            mock.patch.dict('sys.modules', {'parsel': None}),
+            pytest.raises(ImportError) as import_error,
+        ):
             from crawlee.crawlers import ParselCrawler  # noqa: F401
 
-    # Check if the raised ImportError contains the expected message
-    assert str(import_error.value) == (
-        "To import this, you need to install the 'parsel' extra."
-        "For example, if you use pip, run `pip install 'crawlee[parsel]'`."
-    )
+        assert str(import_error.value) == error_msg
+
+    finally:
+        # Restore original sys.modules state
+        sys.modules.clear()
+        sys.modules.update(original_modules)
 
 
 async def test_json(server_url: URL, http_client: HttpClient) -> None:
