@@ -20,6 +20,7 @@ class Monitor:
 
     Includes CPU/memory usage, concurrency, and request progress.
     """
+
     _statistics: Statistics
     _autoscaled_pool: autoscaling.AutoscaledPool
     _request_queue: RequestManager | None
@@ -64,7 +65,7 @@ class Monitor:
                 if 'chromium' in proc.info['name'].lower():
                     cpu = proc.cpu_percent(interval=None)
                     if cpu > 0:
-                        usage_info.append(f"PID {proc.pid}: {cpu:.2f}% CPU")
+                        usage_info.append(f'PID {proc.pid}: {cpu:.2f}% CPU')
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
         return usage_info
@@ -103,11 +104,11 @@ class Monitor:
         )
         chromium_usages = self._get_chromium_cpu_usage()
         if chromium_usages:
-            self._monitor_display.log("Chromium Process CPU Usage:")
+            self._monitor_display.log('Chromium Process CPU Usage:')
             for line in chromium_usages:
-                self._monitor_display.log(f"  {line}")
+                self._monitor_display.log(f'  {line}')
         else:
-            self._monitor_display.log("No active Chromium processes detected.")
+            self._monitor_display.log('No active Chromium processes detected.')
 
 
 class MonitorDisplay:
