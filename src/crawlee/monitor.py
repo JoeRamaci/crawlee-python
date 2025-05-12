@@ -20,7 +20,6 @@ class Monitor:
 
     Includes CPU/memory usage, concurrency, and request progress.
     """
-
     _statistics: Statistics
     _autoscaled_pool: autoscaling.AutoscaledPool
     _request_queue: RequestManager | None
