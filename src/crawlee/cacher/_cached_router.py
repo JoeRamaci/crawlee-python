@@ -1,7 +1,6 @@
 import json
 
 
-# refactor to be Object Oriented?
 def build_router(url: str, cache_path: str, router_path: str) -> None:
     """Build a json file that acts as a 'router' for which pages have been cached.
 
