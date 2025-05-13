@@ -440,7 +440,11 @@ class RequestQueue(Storage, RequestManager):
 
         # Could not lock any new requests - decide based on whether the queue contains requests locked by another client
         if self._queue_has_locked_requests is not None:
-            if self._queue_has_locked_requests and self._dequeued_request_count == 0:
+            if (
+                self._queue_has_locked_requests
+                and self._dequeued_request_count == 0
+                and self._assumed_total_count == self._assumed_handled_count
+            ):
                 # The `% 25` was absolutely arbitrarily picked. It's just to not spam the logs too much.
                 if self._is_finished_log_throttle_counter % 25 == 0:
                     logger.info('The queue still contains requests locked by another client')
