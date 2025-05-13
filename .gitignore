@@ -51,7 +51,9 @@ website/typedoc-types*
 website/package-lock.json
 
 # Default directory for memory storage
-storage/
+/storage/
 
 crawleeTesting/
 tests/unit/test_monitor.py
+
+/sandbox/

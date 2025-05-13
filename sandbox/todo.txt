@@ -1,0 +1,11 @@
+Cacher:
+    1) make basic html caching feature x
+        1) make pre-cache router check loop over array of links for processing arrays of links, similar to crawlee
+    2) make headless browser cacher
+Crawler:
+    1) get crawlee to process cached.html instead of just urls
+        - crawler.run([links], cached=True)
+        - cached_path param, or search for it by default somehow?
+Router:
+    1) json.dumps() to make key:value pairs of:
+        - 'URL':'file_path'
