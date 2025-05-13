@@ -171,21 +171,34 @@ async def test_add_batched_requests(
     'requests',
     [
         [Request.from_url('https://apify.com')],
-        ['https://crawlee.dev'],
+        ['https://crawlee.dev/'],
         [Request.from_url(f'https://example.com/{i}') for i in range(10)],
         [f'https://example.com/{i}' for i in range(15)],
     ],
     ids=['single-request', 'single-url', 'multiple-requests', 'multiple-urls'],
 )
-async def test_add_batched_requests_is_false(
+async def test_add_batched_requests_false_flag(
     request_queue: RequestQueue,
     requests: Sequence[str | Request],
 ) -> None:
+    request_count = len(requests)
+
     # Intentionally set wait_for_all_requests_to_be_added to False
     await request_queue.add_requests_batched(
         requests,
         wait_for_all_requests_to_be_added=False,
     )
+
+    # Even though the flag is False, current impl is sync-like and we can assert immediately
+    assert await request_queue.get_total_count() == request_count
+
+    for original_request in requests:
+        next_request = await request_queue.fetch_next_request()
+        assert next_request is not None
+        expected_url = original_request if isinstance(original_request, str) else original_request.url
+        assert next_request.url == expected_url
+
+    assert await request_queue.is_empty() is True
 
 
 async def test_invalid_user_data_serialization() -> None:
