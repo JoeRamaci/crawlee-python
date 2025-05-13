@@ -1,0 +1,24 @@
+{
+  "id": "eNSCF5CpltvLooy",
+  "unique_key": "https://news.ycombinator.com/?p=4",
+  "order_no": null,
+  "handled_at": "2025-05-13 15:55:00.152464+00:00",
+  "request": {
+    "url": "https://news.ycombinator.com/?p=4",
+    "method": "GET",
+    "headers": {},
+    "payload": null,
+    "user_data": {
+      "__crawlee": {
+        "state": 3,
+        "crawlDepth": 3
+      }
+    },
+    "retry_count": 0,
+    "no_retry": false,
+    "loaded_url": "https://news.ycombinator.com/?p=4",
+    "handled_at": "2025-05-13 15:55:00.152464+00:00",
+    "unique_key": "https://news.ycombinator.com/?p=4",
+    "id": "eNSCF5CpltvLooy"
+  }
+}
