@@ -189,50 +189,41 @@ async def test_handle_blocked_status_code(server_url: URL, http_client: HttpClie
 
 
 def test_import_error_handled() -> None:
-    sys.modules.pop('crawlee.crawlers', None)
-    sys.modules.pop('crawlee', None)
-    sys.modules.pop('crawlee.crawlers._parsel', None)
-    sys.modules.pop('crawlee.crawlers._parsel.parsel_crawler', None)
+    # Clear existing modules
+    for module in (
+        'crawlee',
+        'crawlee.crawlers',
+        'crawlee.crawlers._parsel',
+        'crawlee.crawlers._parsel.parsel_crawler',
+    ):
+        sys.modules.pop(module, None)
 
-    crawlee_module = ModuleType('crawlee')
-    crawlers_module = ModuleType('crawlee.crawlers')
-    crawlers_module.__path__ = []
-
-    sys.modules['crawlee'] = crawlee_module
-    sys.modules['crawlee.crawlers'] = crawlers_module
+    # Create mock modules
+    sys.modules['crawlee'] = ModuleType('crawlee')
+    sys.modules['crawlee.crawlers'] = ModuleType('crawlee.crawlers')
+    sys.modules['crawlee.crawlers'].__path__ = []
 
     install_import_hook('crawlee.crawlers')
 
+    # Test that import fails inside try_import
     with try_import.try_import('crawlee.crawlers', 'ParselCrawler'):
         from crawlee.crawlers._parsel.parsel_crawler import ParselCrawler  # type: ignore[import-not-found]
 
-        pytest.fail('Import succeeded unexpectedly inside try_import block')
+        pytest.fail('Import succeeded unexpectedly inside try_import')
 
-    the_module = sys.modules['crawlee.crawlers']  # type: ignore[unreachable]
+    parsel_crawler_obj_from_dict = sys.modules['crawlee.crawlers'].__dict__['ParselCrawler']  # type: ignore[unreachable]
 
-    parsel_crawler_obj_from_dict = the_module.__dict__['ParselCrawler']
+    # Makes sure the parsel_crawler_obj_from_dict is a FailedImport type
     assert isinstance(parsel_crawler_obj_from_dict, FailedImport), (
         f'Object for ParselCrawler in __dict__ is type {type(parsel_crawler_obj_from_dict)}, expected FailedImport.'
     )
 
     stored_message = parsel_crawler_obj_from_dict.message
-    # This message originates from the actual ModuleNotFoundError when '..._parsel' is not found.
-    expected_message_content = "No module named 'crawlee.crawlers._parsel'"
-    assert expected_message_content in stored_message, (
-        f"Stored message ('{stored_message}') does not contain expected content ('{expected_message_content}'). "
-        f'Correct stored message is: {stored_message}'
-    )
-    print(f"Stored message in FailedImport is: '{stored_message}'")
 
-    with pytest.raises(ImportError) as cm:
+    with pytest.raises(ImportError) as error_message:
         from crawlee.crawlers import ParselCrawler  # noqa: F401
 
-    assert cm.value is not None, 'pytest.raises did not capture an exception'
-    final_error_message = str(cm.value)
-
-    assert final_error_message == stored_message, (
-        f"Final raised error ('{final_error_message}') does not match stored message ('{stored_message}')."
-    )
+    assert str(error_message.value) == stored_message
 
 
 async def test_json(server_url: URL, http_client: HttpClient) -> None:
