@@ -167,6 +167,27 @@ async def test_add_batched_requests(
     assert await request_queue.is_empty() is True
 
 
+@pytest.mark.parametrize(
+    'requests',
+    [
+        [Request.from_url('https://apify.com')],
+        ['https://crawlee.dev'],
+        [Request.from_url(f'https://example.com/{i}') for i in range(10)],
+        [f'https://example.com/{i}' for i in range(15)],
+    ],
+    ids=['single-request', 'single-url', 'multiple-requests', 'multiple-urls'],
+)
+async def test_add_batched_requests_is_false(
+    request_queue: RequestQueue,
+    requests: Sequence[str | Request],
+) -> None:
+    # Intentionally set wait_for_all_requests_to_be_added to False
+    await request_queue.add_requests_batched(
+        requests,
+        wait_for_all_requests_to_be_added=False,
+    )
+
+
 async def test_invalid_user_data_serialization() -> None:
     with pytest.raises(ValidationError):
         Request.from_url(
