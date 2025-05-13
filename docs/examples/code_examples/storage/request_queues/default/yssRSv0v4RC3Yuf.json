@@ -1,0 +1,24 @@
+{
+  "id": "yssRSv0v4RC3Yuf",
+  "unique_key": "https://news.ycombinator.com/?p=7",
+  "order_no": null,
+  "handled_at": "2025-05-13 15:55:01.853010+00:00",
+  "request": {
+    "url": "https://news.ycombinator.com/?p=7",
+    "method": "GET",
+    "headers": {},
+    "payload": null,
+    "user_data": {
+      "__crawlee": {
+        "state": 3,
+        "crawlDepth": 6
+      }
+    },
+    "retry_count": 0,
+    "no_retry": false,
+    "loaded_url": "https://news.ycombinator.com/?p=7",
+    "handled_at": "2025-05-13 15:55:01.853010+00:00",
+    "unique_key": "https://news.ycombinator.com/?p=7",
+    "id": "yssRSv0v4RC3Yuf"
+  }
+}

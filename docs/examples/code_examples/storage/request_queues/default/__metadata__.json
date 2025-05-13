@@ -1,0 +1,14 @@
+{
+  "id": "default",
+  "name": null,
+  "accessed_at": "2025-05-13 15:55:03.354326+00:00",
+  "created_at": "2025-05-13 15:54:54.467942+00:00",
+  "modified_at": "2025-05-13 15:55:03.354327+00:00",
+  "had_multiple_clients": false,
+  "handled_request_count": 10,
+  "pending_request_count": 1,
+  "stats": {},
+  "total_request_count": 11,
+  "user_id": "1",
+  "resource_directory": "./storage/request_queues/default"
+}
